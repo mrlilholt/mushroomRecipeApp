@@ -1,11 +1,19 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Box, Card, CardMedia, Typography, Grid, Button } from "@mui/material";
+import { db, auth } from "./firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+
+// Google Auth provider setup
+const provider = new GoogleAuthProvider();
 
 function App() {
   const [mushroom, setMushroom] = useState("");
   const [recipes, setRecipes] = useState([]);
+  const [user, setUser] = useState(null); // State to store the signed-in user
 
+  // Function to fetch recipes
   const fetchRecipes = async () => {
     try {
       const response = await axios.get(
@@ -14,6 +22,37 @@ function App() {
       setRecipes(response.data);
     } catch (error) {
       console.error("Error fetching recipes:", error);
+    }
+  };
+
+  // Google Sign-In Function
+  const handleSignIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      console.log("Signed in as:", result.user.displayName);
+      setUser(result.user); // Store the user information
+      alert(`Welcome, ${result.user.displayName}!`);
+    } catch (error) {
+      console.error("Error signing in:", error);
+    }
+  };
+
+  // Save favorite recipe to Firestore
+  const saveFavorite = async (recipe) => {
+    if (!user) {
+      alert("You need to sign in to save favorites!");
+      return;
+    }
+
+    try {
+      const favoritesRef = collection(db, "favorites");
+      await addDoc(favoritesRef, {
+        ...recipe,
+        user: user.uid, // Associate with signed-in user
+      });
+      alert("Recipe saved to favorites!");
+    } catch (error) {
+      console.error("Error saving recipe:", error);
     }
   };
 
@@ -29,26 +68,43 @@ function App() {
       {/* Logo */}
       <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 1 }}>
         <img
-          src="/mushroomLogo.png" // Start with '/'
+          src="/mushroomLogo.png"
           alt="Mushroom Recipe Logo"
           style={{ width: "80px", height: "auto" }}
         />
       </Box>
 
       {/* Title */}
-     <Typography
-  variant="h3"
-  component="h1"
-  sx={{
-    textAlign: "center",
-    marginBottom: 2,
-    fontFamily: "'Poppins', sans-serif",
-    fontWeight: 400, // Regular weight
-    color: "#fff",
-  }}
->
-  Mushroom Recipe Finder
-</Typography>
+      <Typography
+        variant="h3"
+        component="h1"
+        sx={{
+          textAlign: "center",
+          marginBottom: 2,
+          fontFamily: "'Poppins', sans-serif",
+          fontWeight: 400,
+          color: "#fff",
+        }}
+      >
+        Mushroom Recipe Finder
+      </Typography>
+
+      {/* Sign-In Section */}
+      <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 2 }}>
+        {!user ? (
+          <Button
+            variant="contained"
+            onClick={handleSignIn}
+            sx={{ background: "#6dd5ed", color: "white" }}
+          >
+            Sign in with Google
+          </Button>
+        ) : (
+          <Typography variant="h6">
+            Welcome, {user.displayName}! 🎉
+          </Typography>
+        )}
+      </Box>
 
       {/* Search Section */}
       <Box
@@ -95,62 +151,67 @@ function App() {
       </Box>
 
       {/* Recipe Grid */}
-     <Grid container spacing={3} sx={{ marginTop: 3 }}>
-  {recipes.map((recipe, index) => (
-    <Grid item xs={12} sm={6} md={4} key={index}>
-      <Card 
-        sx={{ 
-          position: "relative", 
-          borderRadius: 3, 
-          overflow: "hidden",
-          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-          transition: "transform 0.2s ease, box-shadow 0.2s ease",
-          "&:hover": { 
-            transform: "translateY(-5px)", 
-            boxShadow: "0px 8px 16px rgba(0, 0, 0, 0.2)"
-          }
-        }}
-      >
-        {/* Background Image */}
-        <CardMedia
-          component="img"
-          height="200"
-          image={recipe.image_url}
-          alt={recipe.title}
-        />
-        {/* Overlaying Text */}
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            width: "100%",
-            background: "rgba(0, 0, 0, 0.6)",
-            color: "white",
-            padding: "10px",
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-            {recipe.title}
-          </Typography>
-          <Typography variant="body2">
-            ⭐ {recipe.rating} stars ({recipe.ratings_count} reviews)
-          </Typography>
-          <Button
-            variant="contained"
-            size="small"
-            href={recipe.link}
-            target="_blank"
-            sx={{ marginTop: 1, background: "#ff9800" }}
-          >
-            View Recipe
-          </Button>
-        </Box>
-      </Card>
-    </Grid>
-  ))}
-</Grid>
-
+      <Grid container spacing={3} sx={{ marginTop: 3 }}>
+        {recipes.map((recipe, index) => (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Card
+              sx={{
+                position: "relative",
+                borderRadius: 3,
+                overflow: "hidden",
+                boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0px 8px 16px rgba(0, 0, 0, 0.2)",
+                },
+              }}
+            >
+              <CardMedia
+                component="img"
+                height="200"
+                image={recipe.image_url}
+                alt={recipe.title}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  width: "100%",
+                  background: "rgba(0, 0, 0, 0.6)",
+                  color: "white",
+                  padding: "10px",
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                  {recipe.title}
+                </Typography>
+                <Typography variant="body2">
+                  ⭐ {recipe.rating} stars ({recipe.ratings_count} reviews)
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => saveFavorite(recipe)}
+                  sx={{ marginTop: 1, marginRight: 1, background: "#4caf50" }}
+                >
+                  Save Favorite
+                </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  href={recipe.link}
+                  target="_blank"
+                  sx={{ marginTop: 1, background: "#ff9800" }}
+                >
+                  View Recipe
+                </Button>
+              </Box>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
     </Box>
   );
 }

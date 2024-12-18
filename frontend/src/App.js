@@ -1,12 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Box, Card, CardMedia, Typography, Grid, Button } from "@mui/material";
-import { db, auth } from "./firebase";
+import { db } from "./firebase";
 import { collection, addDoc } from "firebase/firestore";
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-
-// Google Auth provider setup
-const provider = new GoogleAuthProvider();
+import { signInWithGoogle } from "./firebase";
 
 function App() {
   const [mushroom, setMushroom] = useState("");
@@ -27,13 +24,10 @@ function App() {
 
   // Google Sign-In Function
   const handleSignIn = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      console.log("Signed in as:", result.user.displayName);
-      setUser(result.user); // Store the user information
-      alert(`Welcome, ${result.user.displayName}!`);
-    } catch (error) {
-      console.error("Error signing in:", error);
+    const result = await signInWithGoogle();
+    if (result) {
+      setUser(result); // Update state with user info
+      alert(`Welcome, ${result.displayName}!`);
     }
   };
 
@@ -48,7 +42,7 @@ function App() {
       const favoritesRef = collection(db, "favorites");
       await addDoc(favoritesRef, {
         ...recipe,
-        user: user.uid, // Associate with signed-in user
+        user: user.uid, // Associate recipe with the signed-in user
       });
       alert("Recipe saved to favorites!");
     } catch (error) {

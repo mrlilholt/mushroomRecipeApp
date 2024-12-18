@@ -21,6 +21,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+const result = await signInWithPopup(auth, provider);
 
 // Export Firebase services for use in the app
 export { db, auth, provider };

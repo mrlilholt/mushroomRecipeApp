@@ -4,7 +4,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 // Your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyDF8RFUXRMB5j9opsdgkC9do_5YaMOLPE",
+  apiKey: "AIzaSyDF8RFUXRM5Bj90psgdkgC9do_5YaMOLpE",
   authDomain: "mushroom-recipes-1c2eb.firebaseapp.com",
   projectId: "mushroom-recipes-1c2eb",
   storageBucket: "mushroom-recipes-1c2eb.appspot.com",

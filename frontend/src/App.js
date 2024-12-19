@@ -125,7 +125,21 @@ function App() {
           else alert("You need to sign in to view favorites!");
         }}
       />
-
+      {/* Logo above the search bar */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          marginTop: "20px",
+        }}
+      >
+        <img
+          src="/mushroomLogo.png"
+          alt="Mushroom Logo"
+          style={{ height: "50px" }}
+        />
+      </Box>
+      
       {/* Search Bar */}
       <SearchBar
         mushroom={mushroom}

@@ -1,79 +1,71 @@
-import React, { useState, useEffect } from "react";
-import { AppBar, Toolbar, Typography, Button, Box, Avatar } from "@mui/material";
-import GoogleIcon from "@mui/icons-material/Google";
+import React from "react";
+import { AppBar, Toolbar, Typography, Box, Avatar, Button } from "@mui/material";
 
 function Header({ user, onSignIn, onLogout }) {
-  const [showWelcome, setShowWelcome] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      // Hide the welcome message after 4 seconds
-      const timer = setTimeout(() => {
-        setShowWelcome(false);
-      }, 4000);
-      return () => clearTimeout(timer); // Cleanup timer on component unmount
-    }
-  }, [user]);
-
   return (
-    <AppBar position="static" sx={{ backgroundColor: "#1e3c72", padding: "0 16px" }}>
-      <Toolbar sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        {/* Center Section: Logo and Title */}
-        <Box sx={{ textAlign: "center", flex: 2 }}>
+    <AppBar
+      position="static"
+      sx={{
+        backgroundColor: "#1e3c72",
+        display: "flex",
+        alignItems: "center", // Center items horizontally
+      }}
+    >
+      <Toolbar
+        sx={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "space-between", // Separate logo/title and user section
+        }}
+      >
+        {/* Centered Logo and Title */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: 1, // Ensures it takes up the full center
+          }}
+        >
           <img
             src="/mushroomLogo.png"
-            alt="Logo"
-            style={{ height: "40px", width: "auto", marginBottom: "8px" }}
+            alt="Mushroom Logo"
+            style={{ height: "40px", marginRight: "10px" }}
           />
           <Typography
             variant="h6"
-            component="div"
             sx={{
-              color: "white",
               fontFamily: "'Poppins', sans-serif",
-              fontWeight: 500,
+              fontWeight: "bold",
+              color: "white",
             }}
           >
             Mushroom Recipe Finder
           </Typography>
         </Box>
 
-        {/* Right Section: Login/Logout and Avatar */}
+        {/* User Section */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           {user ? (
             <>
-              {/* Conditional Welcome Message */}
-              {showWelcome && (
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: "white",
-                    fontFamily: "'Poppins', sans-serif",
-                    fontWeight: 400,
-                  }}
-                >
-                  Welcome, {user.displayName}
-                </Typography>
-              )}
-              <Avatar
-                src={user.photoURL}
-                alt={user.displayName}
+              <Typography
+                variant="body1"
                 sx={{
-                  width: 30,
-                  height: 30,
-                  border: "1px solid white",
+                  fontFamily: "'Poppins', sans-serif",
+                  color: "white",
+                  fontWeight: "bold",
                 }}
-              />
+              >
+                Welcome, {user.displayName.split(" ")[0]}
+              </Typography>
+              <Avatar src={user.photoURL} alt={user.displayName} />
               <Button
-                onClick={onLogout}
                 variant="outlined"
+                onClick={onLogout}
                 sx={{
                   color: "white",
                   borderColor: "white",
-                  textTransform: "none",
-                  fontSize: "12px",
-                  padding: "4px 8px",
-                  minWidth: "50px",
+                  fontFamily: "'Poppins', sans-serif",
                 }}
               >
                 Logout
@@ -81,17 +73,14 @@ function Header({ user, onSignIn, onLogout }) {
             </>
           ) : (
             <Button
+              variant="contained"
               onClick={onSignIn}
-              startIcon={<GoogleIcon />}
               sx={{
                 backgroundColor: "white",
-                color: "black",
-                textTransform: "none",
-                padding: "8px 16px",
-                borderRadius: "4px",
-                fontSize: "14px",
+                color: "#1e3c72",
+                fontFamily: "'Poppins', sans-serif",
                 "&:hover": {
-                  backgroundColor: "#f5f5f5",
+                  backgroundColor: "#f0f0f0",
                 },
               }}
             >

@@ -1,30 +1,40 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { AppBar, Toolbar, Typography, Box, Avatar, Button } from "@mui/material";
 
 function Header({ user, onSignIn, onLogout }) {
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      const timer = setTimeout(() => {
+        setShowWelcomeMessage(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
   return (
     <AppBar
       position="static"
       sx={{
         backgroundColor: "#1e3c72",
         display: "flex",
-        alignItems: "center", // Center items horizontally
+        alignItems: "center",
       }}
     >
       <Toolbar
         sx={{
           width: "100%",
           display: "flex",
-          justifyContent: "space-between", // Separate logo/title and user section
+          justifyContent: "space-between",
         }}
       >
-        {/* Centered Logo and Title */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            flex: 1, // Ensures it takes up the full center
+            flex: 1,
           }}
         >
           <img
@@ -44,20 +54,21 @@ function Header({ user, onSignIn, onLogout }) {
           </Typography>
         </Box>
 
-        {/* User Section */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           {user ? (
             <>
-              <Typography
-                variant="body1"
-                sx={{
-                  fontFamily: "'Poppins', sans-serif",
-                  color: "white",
-                  fontWeight: "bold",
-                }}
-              >
-                Welcome, {user.displayName.split(" ")[0]}
-              </Typography>
+              {showWelcomeMessage && (
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontFamily: "'Poppins', sans-serif",
+                    color: "white",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Welcome, {user.displayName.split(" ")[0]}
+                </Typography>
+              )}
               <Avatar src={user.photoURL} alt={user.displayName} />
               <Button
                 variant="outlined"
@@ -84,6 +95,11 @@ function Header({ user, onSignIn, onLogout }) {
                 },
               }}
             >
+              <img
+                src="https://developers.google.com/identity/images/g-logo.png"
+                alt="Google logo"
+                style={{ height: "20px", marginRight: "8px" }}
+              />
               Sign in with Google
             </Button>
           )}

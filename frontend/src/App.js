@@ -1,3 +1,4 @@
+// App.js (corrected version)
 import React, { useState, useCallback } from "react";
 import { Box } from "@mui/material";
 import Header from "./components/header";

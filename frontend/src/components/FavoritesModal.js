@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography, Modal, Button, Grid } from "@mui/material";
 
-const FavoritesModal = ({ open, onClose, favorites }) => {
+const FavoritesModal = ({ open, onClose, favorites = [] }) => {
   return (
     <Modal open={open} onClose={onClose}>
       <Box

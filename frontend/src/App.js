@@ -1,101 +1,31 @@
 import React, { useState, useCallback } from "react";
-import axios from "axios";
-import {
-  Box,
-  Card,
-  CardMedia,
-  Typography,
-  Grid,
-  Button,
-  Modal,
-  TextField,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
-} from "@mui/material";
+import { Box } from "@mui/material";
+import Header from "./components/header";
+import SearchBar from "./components/SearchBar";
+import RecipeGrid from "./components/RecipeGrid";
+import FavoritesModal from "./components/FavoritesModal";
+import Footer from "./components/Footer";
 import { db } from "./firebase";
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { signInWithGoogle } from "./firebase";
 
 function App() {
   const [mushroom, setMushroom] = useState("");
   const [recipes, setRecipes] = useState([]);
   const [favorites, setFavorites] = useState([]);
-  const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [user, setUser] = useState(null);
   const [viewingFavorites, setViewingFavorites] = useState(false);
-  const [categories, setCategories] = useState(["Dinner", "Snacks", "Breakfast", "Custom"]);
-  const [newCategory, setNewCategory] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [currentRecipe, setCurrentRecipe] = useState(null); // For modal
   const [modalOpen, setModalOpen] = useState(false);
 
-  const fetchFavorites = useCallback(async (currentUser) => {
-    if (!currentUser || !currentUser.uid) {
-      console.error("No user is logged in or user data is missing.");
-      return;
-    }
-
-    try {
-      const favoritesRef = collection(db, "favorites");
-      const q = query(favoritesRef, where("user", "==", currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      const fetchedFavorites = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setFavorites(fetchedFavorites);
-      setFavoriteIds(new Set(fetchedFavorites.map((fav) => fav.id))); // Track favorite IDs
-      setViewingFavorites(true);
-    } catch (error) {
-      console.error("Error fetching favorites:", error);
-    }
-  }, []);
-
-  const handleSignIn = async () => {
-    try {
-      const result = await signInWithGoogle();
-      if (result) {
-        setUser(result);
-        alert(`Welcome, ${result.displayName}!`);
-        await fetchFavorites(result);
-      }
-    } catch (error) {
-      alert("Failed to sign in. Please try again.");
-    }
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setFavorites([]);
-    setFavoriteIds(new Set());
-    alert("You have logged out.");
-  };
-
-  const handleViewFavorites = async () => {
-    if (!user) {
-      alert("You need to sign in to view favorites!");
-      return;
-    }
-    await fetchFavorites(user);
-  };
-
+  // Fetch recipes based on user input
   const fetchRecipes = async () => {
     try {
-      const response = await axios.get(
-        `https://mushroomrecipe.onrender.com/search?mushroom=${mushroom}`
-      );
+      const response = await fetch(`https://mushroomrecipe.onrender.com/search?mushroom=${mushroom}`);
+      const data = await response.json();
       setRecipes(
-        response.data.map((recipe) => ({
+        data.map((recipe) => ({
           ...recipe,
-          id: recipe.id || recipe.title, // Ensure every recipe has a unique ID
+          id: recipe.id || recipe.title, // Ensure unique IDs
         }))
       );
       setViewingFavorites(false);
@@ -104,38 +34,49 @@ function App() {
     }
   };
 
+  // Fetch user's favorite recipes
+  const fetchFavorites = useCallback(async (currentUser) => {
+    if (!currentUser?.uid) {
+      console.error("No user is logged in or user data is missing.");
+      return;
+    }
+    try {
+      const favoritesRef = collection(db, "favorites");
+      const q = query(favoritesRef, where("user", "==", currentUser.uid));
+      const querySnapshot = await getDocs(q);
+      setFavorites(querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      setViewingFavorites(true);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+    }
+  }, []);
+
+  // Add a recipe to favorites
   const addToFavorites = async (recipe) => {
     if (!user) {
       alert("You need to sign in to save favorites!");
       return;
     }
 
-    if (favoriteIds.has(recipe.id)) {
-      alert("This recipe is already in your favorites!");
-      return;
-    }
-
-    if (!selectedCategory && categories.length > 0) {
-      alert("Please select a category for this recipe.");
-      return;
-    }
-
     try {
-      const category = selectedCategory === "Custom" ? newCategory : selectedCategory;
       const favoritesRef = collection(db, "favorites");
-      const docRef = await addDoc(favoritesRef, {
-        ...recipe,
-        user: user.uid,
-        category,
-      });
-      setFavoriteIds((prev) => new Set(prev).add(recipe.id));
-      setFavorites((prev) => [...prev, { ...recipe, id: docRef.id, category }]);
+      await addDoc(favoritesRef, { ...recipe, user: user.uid });
+      setFavorites((prev) => [...prev, recipe]);
       alert("Recipe added to favorites!");
-      setModalOpen(false);
-      setSelectedCategory("");
-      setNewCategory("");
     } catch (error) {
       console.error("Error saving recipe:", error);
+    }
+  };
+
+  // Handle user sign-in
+  const handleSignIn = async () => {
+    try {
+      const result = await signInWithGoogle();
+      setUser(result);
+      alert(`Welcome, ${result.displayName}!`);
+      fetchFavorites(result);
+    } catch (error) {
+      alert("Failed to sign in. Please try again.");
     }
   };
 
@@ -149,281 +90,43 @@ function App() {
         justifyContent: "space-between",
       }}
     >
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, padding: 3, color: "white" }}>
-        {/* Logo */}
-        <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 1 }}>
-          <img
-            src="/mushroomLogo.png"
-            alt="Mushroom Recipe Logo"
-            style={{ width: "80px", height: "auto" }}
-          />
-        </Box>
+      {/* Header */}
+      <Header
+        user={user}
+        onSignIn={handleSignIn}
+        onLogout={() => {
+          setUser(null);
+          setFavorites([]);
+        }}
+      />
 
-        {/* Title */}
-        <Typography
-          variant="h3"
-          component="h1"
-          sx={{
-            textAlign: "center",
-            marginBottom: 2,
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 400,
-            color: "#fff",
-          }}
-        >
-          Mushroom Recipe Finder
-        </Typography>
+      {/* Search Bar */}
+      <SearchBar
+        mushroom={mushroom}
+        setMushroom={setMushroom}
+        onSearch={fetchRecipes}
+        onViewFavorites={() => user && fetchFavorites(user)}
+      />
 
-        {/* Sign-In Section */}
-        <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 2 }}>
-          {!user ? (
-            <Button
-              variant="contained"
-              onClick={handleSignIn}
-              sx={{ background: "#6dd5ed", color: "white" }}
-            >
-              Sign in with Google
-            </Button>
-          ) : (
-            <>
-              <Typography variant="h6" sx={{ marginRight: 2 }}>
-                Welcome, {user.displayName}! 🎉
-              </Typography>
-              <Button
-                variant="outlined"
-                onClick={handleLogout}
-                sx={{ color: "#fff", borderColor: "#fff" }}
-              >
-                Logout
-              </Button>
-            </>
-          )}
-        </Box>
+      {/* Recipe Grid */}
+      <RecipeGrid
+        recipes={viewingFavorites ? favorites : recipes}
+        onAddToFavorites={(recipe) => {
+          setModalOpen(true);
+          addToFavorites(recipe);
+        }}
+      />
 
-        {/* Search Section */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: 3,
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Search for mushrooms..."
-            value={mushroom}
-            onChange={(e) => setMushroom(e.target.value)}
-            style={{
-              padding: "12px",
-              borderRadius: "25px",
-              border: "none",
-              width: "300px",
-              background: "rgba(255, 255, 255, 0.2)",
-              backdropFilter: "blur(10px)",
-              color: "white",
-              fontSize: "16px",
-              outline: "none",
-            }}
-          />
-          <Button
-            onClick={fetchRecipes}
-            variant="contained"
-            sx={{
-              background: "linear-gradient(135deg, #6dd5ed, #2193b0)",
-              color: "white",
-              borderRadius: "25px",
-              padding: "10px 20px",
-              textTransform: "none",
-              "&:hover": {
-                background: "linear-gradient(135deg, #5ab4d7, #1b7e95)",
-              },
-            }}
-          >
-            Search
-          </Button>
-          {user && (
-            <Button
-              onClick={handleViewFavorites}
-              variant="contained"
-              sx={{
-                background: "#ff9800",
-                color: "white",
-                borderRadius: "25px",
-                textTransform: "none",
-                "&:hover": {
-                  background: "#e08900",
-                },
-              }}
-            >
-              View Favorites
-            </Button>
-          )}
-        </Box>
-
-        {/* Recipe Grid */}
-        <Grid container spacing={3} sx={{ marginTop: 3 }}>
-          {(viewingFavorites ? favorites : recipes).map((recipe) => (
-            <Grid item xs={12} sm={6} md={4} key={recipe.id}>
-              <Card
-                sx={{
-                  position: "relative",
-                  borderRadius: 3,
-                  overflow: "hidden",
-                  boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                  "&:hover": {
-                    transform: "translateY(-5px)",
-                    boxShadow: "0px 8px 16px rgba(0, 0, 0, 0.2)",
-                  },
-                }}
-              >
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={recipe.image_url}
-                  alt={recipe.title}
-                />
-                <Box
-                  sx={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    width: "100%",
-                    background: "rgba(0, 0, 0, 0.6)",
-                    color: "white",
-                    padding: "10px",
-                  }}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    {recipe.title}
-                  </Typography>
-                  <Typography variant="body2">
-                    ⭐ {recipe.rating} stars ({recipe.ratings_count} reviews)
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => {
-                      setCurrentRecipe(recipe);
-                      setModalOpen(true);
-                    }}
-                    sx={{
-                      marginTop: 1,
-                      background: "#4caf50",
-                      "&:hover": { background: "#45a047" },
-                    }}
-                  >
-                    Add to Favorites
-                  </Button>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    href={recipe.link}
-                    target="_blank"
-                    sx={{ marginTop: 1, background: "#ff9800" }}
-                  >
-                    View Recipe
-                  </Button>
-                </Box>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Add to Favorites Modal */}
-        <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
-          <Box
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              background: "white",
-              padding: 4,
-              borderRadius: 3,
-              boxShadow: 24,
-            }}
-          >
-            <Typography variant="h6" sx={{ marginBottom: 2 }}>
-              Select a Category
-            </Typography>
-            <FormControl fullWidth>
-              <InputLabel id="category-label">Category</InputLabel>
-              <Select
-                labelId="category-label"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                {categories.map((cat) => (
-                  <MenuItem value={cat} key={cat}>
-                    {cat}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {selectedCategory === "Custom" && (
-              <TextField
-                fullWidth
-                label="New Category"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                sx={{ marginTop: 2 }}
-              />
-            )}
-            <Button
-              onClick={() => {
-                if (currentRecipe) {
-                  addToFavorites(currentRecipe);
-                }
-              }}
-              variant="contained"
-              sx={{ marginTop: 3 }}
-            >
-              Confirm
-            </Button>
-          </Box>
-        </Modal>
-      </Box>
+      {/* Favorites Modal */}
+      <FavoritesModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onAddToFavorites={addToFavorites}
+        recipes={recipes}
+      />
 
       {/* Footer */}
-      <Box
-        component="footer"
-        sx={{
-          background: "rgba(0, 0, 0, 0.8)",
-          color: "white",
-          textAlign: "center",
-          padding: 2,
-        }}
-      >
-        <Typography variant="body2">
-          &copy; {new Date().getFullYear()} Mushroom Recipe Finder. All rights
-          reserved. |{" "}
-          <a
-            href="/privacy-policy.html"
-            style={{
-              color: "#6dd5ed",
-              textDecoration: "none",
-            }}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>{" "}
-          |{" "}
-          <a
-            href="/terms-of-service.html"
-            style={{
-              color: "#6dd5ed",
-              textDecoration: "none",
-            }}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Terms of Service
-          </a>
-        </Typography>
-      </Box>
+      <Footer />
     </Box>
   );
 }

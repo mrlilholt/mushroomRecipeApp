@@ -4,6 +4,7 @@ import Header from "./components/header";
 import SearchBar from "./components/SearchBar";
 import RecipeGrid from "./components/RecipeGrid";
 import FavoritesModal from "./components/FavoritesModal";
+import BottomNav from "./components/BottomNav";
 import Footer from "./components/Footer";
 import { db } from "./firebase";
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
@@ -80,6 +81,29 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    setUser(null);
+    setFavorites([]);
+    setViewingFavorites(false);
+  };
+
+  // Bottom navigation handlers
+  const handleHomeClick = () => {
+    setViewingFavorites(false);
+  };
+
+  const handleFavoritesClick = () => {
+    if (user) {
+      setModalOpen(true);
+    } else {
+      alert("You need to log in to view your favorites!");
+    }
+  };
+
+  const handleVideosClick = () => {
+    alert("Videos feature coming soon!");
+  };
+
   return (
     <Box
       sx={{
@@ -92,42 +116,40 @@ function App() {
     >
       {/* Header */}
       <Header
-  user={user}
-  onSignIn={handleSignIn}
-  onLogout={() => {
-    setUser(null);
-    setFavorites([]);
-  }}
-  onViewFavorites={() => {
-    if (user) fetchFavorites(user);
-    else alert("You need to sign in to view favorites!");
-  }}
-/>
-
+        user={user}
+        onSignIn={handleSignIn}
+        onLogout={handleLogout}
+        onViewFavorites={() => {
+          if (user) fetchFavorites(user);
+          else alert("You need to sign in to view favorites!");
+        }}
+      />
 
       {/* Search Bar */}
       <SearchBar
         mushroom={mushroom}
         setMushroom={setMushroom}
         onSearch={fetchRecipes}
-        onViewFavorites={() => user && fetchFavorites(user)}
       />
 
       {/* Recipe Grid */}
       <RecipeGrid
         recipes={viewingFavorites ? favorites : recipes}
-        onAddToFavorites={(recipe) => {
-          setModalOpen(true);
-          addToFavorites(recipe);
-        }}
+        onAddToFavorites={addToFavorites}
       />
 
       {/* Favorites Modal */}
       <FavoritesModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onAddToFavorites={addToFavorites}
-        recipes={recipes}
+        favorites={favorites}
+      />
+
+      {/* Bottom Navigation */}
+      <BottomNav
+        onHomeClick={handleHomeClick}
+        onFavoritesClick={handleFavoritesClick}
+        onVideosClick={handleVideosClick}
       />
 
       {/* Footer */}

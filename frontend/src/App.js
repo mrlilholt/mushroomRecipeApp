@@ -92,13 +92,18 @@ function App() {
     >
       {/* Header */}
       <Header
-        user={user}
-        onSignIn={handleSignIn}
-        onLogout={() => {
-          setUser(null);
-          setFavorites([]);
-        }}
-      />
+  user={user}
+  onSignIn={handleSignIn}
+  onLogout={() => {
+    setUser(null);
+    setFavorites([]);
+  }}
+  onViewFavorites={() => {
+    if (user) fetchFavorites(user);
+    else alert("You need to sign in to view favorites!");
+  }}
+/>
+
 
       {/* Search Bar */}
       <SearchBar

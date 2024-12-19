@@ -18,8 +18,9 @@ function Header({ user, onSignIn, onLogout }) {
       position="static"
       sx={{
         backgroundColor: "#1e3c72",
+        padding: "0 16px", // Add padding for spacing
         display: "flex",
-        alignItems: "center",
+        justifyContent: "space-between",
       }}
     >
       <Toolbar
@@ -27,21 +28,24 @@ function Header({ user, onSignIn, onLogout }) {
           width: "100%",
           display: "flex",
           justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
+        {/* Title on the left side */}
         <Typography
           variant="h6"
           sx={{
             fontFamily: "'Poppins', sans-serif",
             fontWeight: "bold",
             color: "white",
-            textAlign: "center",
-            flex: 1,
+            textAlign: "left",
+            paddingLeft: "16px", // Padding on the left
           }}
         >
           Mushroom Recipe Finder
         </Typography>
 
+        {/* User Section on the right */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           {user ? (
             <>

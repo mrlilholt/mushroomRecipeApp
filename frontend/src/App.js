@@ -1,8 +1,27 @@
 import React, { useState, useCallback } from "react";
 import axios from "axios";
-import { Box, Card, CardMedia, Typography, Grid, Button } from "@mui/material";
+import {
+  Box,
+  Card,
+  CardMedia,
+  Typography,
+  Grid,
+  Button,
+  Modal,
+  TextField,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+} from "@mui/material";
 import { db } from "./firebase";
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { signInWithGoogle } from "./firebase";
 
 function App() {
@@ -12,8 +31,12 @@ function App() {
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [user, setUser] = useState(null);
   const [viewingFavorites, setViewingFavorites] = useState(false);
+  const [categories, setCategories] = useState(["Dinner", "Snacks", "Breakfast", "Custom"]);
+  const [newCategory, setNewCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [currentRecipe, setCurrentRecipe] = useState(null); // For modal
+  const [modalOpen, setModalOpen] = useState(false);
 
-  // Fetch user's favorite recipes
   const fetchFavorites = useCallback(async (currentUser) => {
     if (!currentUser || !currentUser.uid) {
       console.error("No user is logged in or user data is missing.");
@@ -36,7 +59,6 @@ function App() {
     }
   }, []);
 
-  // Handle user login
   const handleSignIn = async () => {
     try {
       const result = await signInWithGoogle();
@@ -50,15 +72,13 @@ function App() {
     }
   };
 
-  // Handle user logout
   const handleLogout = () => {
     setUser(null);
     setFavorites([]);
     setFavoriteIds(new Set());
-    setViewingFavorites(false);
+    alert("You have logged out.");
   };
 
-  // Handle "View Favorites" button click
   const handleViewFavorites = async () => {
     if (!user) {
       alert("You need to sign in to view favorites!");
@@ -67,7 +87,6 @@ function App() {
     await fetchFavorites(user);
   };
 
-  // Function to fetch recipes
   const fetchRecipes = async () => {
     try {
       const response = await axios.get(
@@ -85,7 +104,6 @@ function App() {
     }
   };
 
-  // Save favorite recipe to Firestore
   const addToFavorites = async (recipe) => {
     if (!user) {
       alert("You need to sign in to save favorites!");
@@ -97,15 +115,25 @@ function App() {
       return;
     }
 
+    if (!selectedCategory && categories.length > 0) {
+      alert("Please select a category for this recipe.");
+      return;
+    }
+
     try {
+      const category = selectedCategory === "Custom" ? newCategory : selectedCategory;
       const favoritesRef = collection(db, "favorites");
       const docRef = await addDoc(favoritesRef, {
         ...recipe,
         user: user.uid,
+        category,
       });
       setFavoriteIds((prev) => new Set(prev).add(recipe.id));
-      setFavorites((prev) => [...prev, { ...recipe, id: docRef.id }]);
+      setFavorites((prev) => [...prev, { ...recipe, id: docRef.id, category }]);
       alert("Recipe added to favorites!");
+      setModalOpen(false);
+      setSelectedCategory("");
+      setNewCategory("");
     } catch (error) {
       console.error("Error saving recipe:", error);
     }
@@ -235,8 +263,8 @@ function App() {
 
         {/* Recipe Grid */}
         <Grid container spacing={3} sx={{ marginTop: 3 }}>
-          {(viewingFavorites ? favorites : recipes).map((recipe, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
+          {(viewingFavorites ? favorites : recipes).map((recipe) => (
+            <Grid item xs={12} sm={6} md={4} key={recipe.id}>
               <Card
                 sx={{
                   position: "relative",
@@ -276,7 +304,10 @@ function App() {
                   <Button
                     variant="contained"
                     size="small"
-                    onClick={() => addToFavorites(recipe)}
+                    onClick={() => {
+                      setCurrentRecipe(recipe);
+                      setModalOpen(true);
+                    }}
                     sx={{
                       marginTop: 1,
                       background: "#4caf50",
@@ -299,6 +330,60 @@ function App() {
             </Grid>
           ))}
         </Grid>
+
+        {/* Add to Favorites Modal */}
+        <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "white",
+              padding: 4,
+              borderRadius: 3,
+              boxShadow: 24,
+            }}
+          >
+            <Typography variant="h6" sx={{ marginBottom: 2 }}>
+              Select a Category
+            </Typography>
+            <FormControl fullWidth>
+              <InputLabel id="category-label">Category</InputLabel>
+              <Select
+                labelId="category-label"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                {categories.map((cat) => (
+                  <MenuItem value={cat} key={cat}>
+                    {cat}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {selectedCategory === "Custom" && (
+              <TextField
+                fullWidth
+                label="New Category"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                sx={{ marginTop: 2 }}
+              />
+            )}
+            <Button
+              onClick={() => {
+                if (currentRecipe) {
+                  addToFavorites(currentRecipe);
+                }
+              }}
+              variant="contained"
+              sx={{ marginTop: 3 }}
+            >
+              Confirm
+            </Button>
+          </Box>
+        </Modal>
       </Box>
 
       {/* Footer */}

@@ -1,31 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Box, Card, CardMedia, Typography, Grid, Button } from "@mui/material";
+import { Box, Card, CardMedia, Typography, Grid, Button, IconButton } from "@mui/material";
 import { db } from "./firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { signInWithGoogle } from "./firebase";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
 
 function App() {
   const [mushroom, setMushroom] = useState("");
   const [recipes, setRecipes] = useState([]);
-  const [user, setUser] = useState(null);
+  const [favorites, setFavorites] = useState([]); // State to store favorite recipes
+  const [favoriteIds, setFavoriteIds] = useState(new Set()); // Set of favorite recipe IDs
+  const [user, setUser] = useState(null); // State to store the signed-in user
+  const [viewingFavorites, setViewingFavorites] = useState(false); // Toggle for viewing favorites
 
+  useEffect(() => {
+    if (user) fetchFavorites();
+  }, [user]);
+
+  // Function to fetch recipes
   const fetchRecipes = async () => {
     try {
       const response = await axios.get(
         `https://mushroomrecipe.onrender.com/search?mushroom=${mushroom}`
       );
       setRecipes(response.data);
+      setViewingFavorites(false); // Exit favorites view if searching again
     } catch (error) {
       console.error("Error fetching recipes:", error);
     }
   };
 
+  // Google Sign-In Function
   const handleSignIn = async () => {
     try {
       const result = await signInWithGoogle();
       if (result) {
-        setUser(result);
+        setUser(result); // Update state with user info
         alert(`Welcome, ${result.displayName}!`);
       }
     } catch (error) {
@@ -33,21 +45,64 @@ function App() {
     }
   };
 
-  const saveFavorite = async (recipe) => {
+  // Save or remove favorite recipe to/from Firestore
+  const toggleFavorite = async (recipe) => {
     if (!user) {
       alert("You need to sign in to save favorites!");
       return;
     }
 
     try {
-      const favoritesRef = collection(db, "favorites");
-      await addDoc(favoritesRef, {
-        ...recipe,
-        user: user.uid,
-      });
-      alert("Recipe saved to favorites!");
+      if (favoriteIds.has(recipe.id)) {
+        // Remove from favorites
+        const favoritesRef = collection(db, "favorites");
+        const q = query(
+          favoritesRef,
+          where("user", "==", user.uid),
+          where("id", "==", recipe.id)
+        );
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach(async (docSnap) => {
+          await deleteDoc(doc(db, "favorites", docSnap.id));
+        });
+        setFavoriteIds((prev) => {
+          const updated = new Set(prev);
+          updated.delete(recipe.id);
+          return updated;
+        });
+        alert("Recipe removed from favorites!");
+      } else {
+        // Add to favorites
+        const favoritesRef = collection(db, "favorites");
+        await addDoc(favoritesRef, {
+          ...recipe,
+          user: user.uid, // Associate recipe with the signed-in user
+        });
+        setFavoriteIds((prev) => new Set(prev).add(recipe.id));
+        alert("Recipe saved to favorites!");
+      }
     } catch (error) {
-      console.error("Error saving recipe:", error);
+      console.error("Error toggling favorite:", error);
+    }
+  };
+
+  // Fetch user's favorite recipes
+  const fetchFavorites = async () => {
+    if (!user) {
+      alert("You need to sign in to view your favorites!");
+      return;
+    }
+
+    try {
+      const favoritesRef = collection(db, "favorites");
+      const q = query(favoritesRef, where("user", "==", user.uid));
+      const querySnapshot = await getDocs(q);
+      const fetchedFavorites = querySnapshot.docs.map((doc) => doc.data());
+      setFavorites(fetchedFavorites);
+      setFavoriteIds(new Set(fetchedFavorites.map((fav) => fav.id))); // Track favorite IDs
+      setViewingFavorites(true); // Set to viewing favorites mode
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
     }
   };
 
@@ -61,14 +116,20 @@ function App() {
         justifyContent: "space-between",
       }}
     >
+      {/* Main Content */}
       <Box sx={{ flexGrow: 1, padding: 3, color: "white" }}>
-        <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 1 }}>
+        {/* Logo */}
+        <Box
+          sx={{ display: "flex", justifyContent: "center", marginBottom: 1 }}
+        >
           <img
             src="/mushroomLogo.png"
             alt="Mushroom Recipe Logo"
             style={{ width: "80px", height: "auto" }}
           />
         </Box>
+
+        {/* Title */}
         <Typography
           variant="h3"
           component="h1"
@@ -82,6 +143,8 @@ function App() {
         >
           Mushroom Recipe Finder
         </Typography>
+
+        {/* Sign-In Section */}
         <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 2 }}>
           {!user ? (
             <Button
@@ -95,10 +158,13 @@ function App() {
             <Typography variant="h6">Welcome, {user.displayName}! 🎉</Typography>
           )}
         </Box>
+
+        {/* Action Buttons */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "center",
+            gap: 2,
             marginBottom: 3,
           }}
         >
@@ -116,7 +182,6 @@ function App() {
               backdropFilter: "blur(10px)",
               color: "white",
               fontSize: "16px",
-              marginRight: "10px",
               outline: "none",
             }}
           />
@@ -136,9 +201,28 @@ function App() {
           >
             Search
           </Button>
+          {user && (
+            <Button
+              onClick={fetchFavorites}
+              variant="contained"
+              sx={{
+                background: "#ff9800",
+                color: "white",
+                borderRadius: "25px",
+                textTransform: "none",
+                "&:hover": {
+                  background: "#e08900",
+                },
+              }}
+            >
+              View Favorites
+            </Button>
+          )}
         </Box>
+
+        {/* Recipe Grid */}
         <Grid container spacing={3} sx={{ marginTop: 3 }}>
-          {recipes.map((recipe, index) => (
+          {(viewingFavorites ? favorites : recipes).map((recipe, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
               <Card
                 sx={{
@@ -176,14 +260,16 @@ function App() {
                   <Typography variant="body2">
                     ⭐ {recipe.rating} stars ({recipe.ratings_count} reviews)
                   </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => saveFavorite(recipe)}
-                    sx={{ marginTop: 1, marginRight: 1, background: "#4caf50" }}
+                  <IconButton
+                    onClick={() => toggleFavorite(recipe)}
+                    sx={{ color: "yellow" }}
                   >
-                    Save Favorite
-                  </Button>
+                    {favoriteIds.has(recipe.id) ? (
+                      <StarIcon />
+                    ) : (
+                      <StarBorderIcon />
+                    )}
+                  </IconButton>
                   <Button
                     variant="contained"
                     size="small"
@@ -198,42 +284,6 @@ function App() {
             </Grid>
           ))}
         </Grid>
-      </Box>
-      <Box
-        component="footer"
-        sx={{
-          background: "rgba(0, 0, 0, 0.8)",
-          color: "white",
-          textAlign: "center",
-          padding: 2,
-        }}
-      >
-        <Typography variant="body2">
-          &copy; {new Date().getFullYear()} Mushroom Recipe Finder. All rights reserved. |{" "}
-          <a
-            href="/privacy-policy.html"
-            style={{
-              color: "#6dd5ed",
-              textDecoration: "none",
-              marginRight: "10px",
-            }}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>
-          <a
-            href="/terms-of-service.html"
-            style={{
-              color: "#6dd5ed",
-              textDecoration: "none",
-            }}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Terms of Service
-          </a>
-        </Typography>
       </Box>
     </Box>
   );

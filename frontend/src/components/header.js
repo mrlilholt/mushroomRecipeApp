@@ -1,25 +1,43 @@
 import React from "react";
 import { AppBar, Toolbar, Typography, Button, Box, Avatar } from "@mui/material";
-import GoogleIcon from '@mui/icons-material/Google';
+import GoogleIcon from "@mui/icons-material/Google";
 
 function Header({ user, onSignIn, onLogout }) {
   return (
     <AppBar position="static" sx={{ backgroundColor: "#1e3c72", padding: "0 16px" }}>
       <Toolbar sx={{ justifyContent: "space-between", alignItems: "center" }}>
-        {/* Centered Logo */}
-        <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
+        {/* Left: Title and Logo */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <img
             src="/mushroomLogo.png"
             alt="Logo"
-            style={{ height: "50px", width: "auto" }}
+            style={{ height: "40px", width: "auto" }}
           />
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              color: "white",
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 500,
+            }}
+          >
+            Mushroom Recipe Finder
+          </Typography>
         </Box>
 
-        {/* Login/Favorites Section */}
+        {/* Right: Login/Favorites Section */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           {user ? (
             <>
-              <Typography variant="body1" sx={{ color: "white" }}>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "white",
+                  fontFamily: "'Poppins', sans-serif",
+                  fontWeight: 400,
+                }}
+              >
                 Welcome, {user.displayName}
               </Typography>
               <Avatar

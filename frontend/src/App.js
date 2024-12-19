@@ -14,15 +14,10 @@ function App() {
   const [viewingFavorites, setViewingFavorites] = useState(false);
 
   // Fetch user's favorite recipes
-  const fetchFavorites = useCallback(async () => {
-    if (!user) {
-      alert("You need to sign in to view your favorites!");
-      return;
-    }
-
+  const fetchFavorites = useCallback(async (loggedInUser) => {
     try {
       const favoritesRef = collection(db, "favorites");
-      const q = query(favoritesRef, where("user", "==", user.uid));
+      const q = query(favoritesRef, where("user", "==", loggedInUser.uid));
       const querySnapshot = await getDocs(q);
       const fetchedFavorites = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -30,15 +25,33 @@ function App() {
       }));
       setFavorites(fetchedFavorites);
       setFavoriteIds(new Set(fetchedFavorites.map((fav) => fav.id))); // Track favorite IDs
-      setViewingFavorites(true);
     } catch (error) {
       console.error("Error fetching favorites:", error);
     }
-  }, [user]);
+  }, []);
 
-  useEffect(() => {
-    if (user) fetchFavorites();
-  }, [user, fetchFavorites]);
+  // Handle user login
+  const handleSignIn = async () => {
+    try {
+      const result = await signInWithGoogle();
+      if (result) {
+        setUser(result);
+        alert(`Welcome, ${result.displayName}!`);
+        // Fetch favorites for the logged-in user
+        await fetchFavorites(result);
+      }
+    } catch (error) {
+      alert("Failed to sign in. Please try again.");
+    }
+  };
+
+  // Handle user logout
+  const handleLogout = () => {
+    setUser(null);
+    setFavorites([]);
+    setFavoriteIds(new Set());
+    setViewingFavorites(false);
+  };
 
   // Function to fetch recipes
   const fetchRecipes = async () => {
@@ -58,19 +71,6 @@ function App() {
     }
   };
 
-  // Google Sign-In Function
-  const handleSignIn = async () => {
-    try {
-      const result = await signInWithGoogle();
-      if (result) {
-        setUser(result);
-        alert(`Welcome, ${result.displayName}!`);
-      }
-    } catch (error) {
-      alert("Failed to sign in. Please try again.");
-    }
-  };
-
   // Save favorite recipe to Firestore
   const addToFavorites = async (recipe) => {
     if (!user) {
@@ -85,12 +85,12 @@ function App() {
 
     try {
       const favoritesRef = collection(db, "favorites");
-      await addDoc(favoritesRef, {
+      const docRef = await addDoc(favoritesRef, {
         ...recipe,
         user: user.uid,
       });
       setFavoriteIds((prev) => new Set(prev).add(recipe.id));
-      setFavorites((prev) => [...prev, recipe]);
+      setFavorites((prev) => [...prev, { ...recipe, id: docRef.id }]);
       alert("Recipe added to favorites!");
     } catch (error) {
       console.error("Error saving recipe:", error);
@@ -144,7 +144,18 @@ function App() {
               Sign in with Google
             </Button>
           ) : (
-            <Typography variant="h6">Welcome, {user.displayName}! 🎉</Typography>
+            <>
+              <Typography variant="h6" sx={{ marginRight: 2 }}>
+                Welcome, {user.displayName}! 🎉
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={handleLogout}
+                sx={{ color: "#fff", borderColor: "#fff" }}
+              >
+                Logout
+              </Button>
+            </>
           )}
         </Box>
 

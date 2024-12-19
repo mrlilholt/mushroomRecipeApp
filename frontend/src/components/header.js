@@ -5,13 +5,16 @@ import GoogleIcon from "@mui/icons-material/Google";
 function Header({ user, onSignIn, onLogout }) {
   return (
     <AppBar position="static" sx={{ backgroundColor: "#1e3c72", padding: "0 16px" }}>
-      <Toolbar sx={{ justifyContent: "space-between", alignItems: "center" }}>
-        {/* Left: Title and Logo */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <Toolbar sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {/* Left Section: Empty for now */}
+        <Box sx={{ flex: 1 }} />
+
+        {/* Center Section: Logo and Title */}
+        <Box sx={{ textAlign: "center", flex: 2 }}>
           <img
             src="/mushroomLogo.png"
             alt="Logo"
-            style={{ height: "40px", width: "auto" }}
+            style={{ height: "40px", width: "auto", marginBottom: "8px" }}
           />
           <Typography
             variant="h6"
@@ -26,8 +29,8 @@ function Header({ user, onSignIn, onLogout }) {
           </Typography>
         </Box>
 
-        {/* Right: Login/Favorites Section */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {/* Right Section: Login/Logout */}
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2 }}>
           {user ? (
             <>
               <Typography

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Box, Card, CardMedia, Typography, Grid, Button, IconButton } from "@mui/material";
 import { db } from "./firebase";
@@ -10,14 +10,34 @@ import StarBorderIcon from "@mui/icons-material/StarBorder";
 function App() {
   const [mushroom, setMushroom] = useState("");
   const [recipes, setRecipes] = useState([]);
-  const [favorites, setFavorites] = useState([]); // State to store favorite recipes
-  const [favoriteIds, setFavoriteIds] = useState(new Set()); // Set of favorite recipe IDs
-  const [user, setUser] = useState(null); // State to store the signed-in user
-  const [viewingFavorites, setViewingFavorites] = useState(false); // Toggle for viewing favorites
+  const [favorites, setFavorites] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
+  const [user, setUser] = useState(null);
+  const [viewingFavorites, setViewingFavorites] = useState(false);
+
+  // Fetch user's favorite recipes
+  const fetchFavorites = useCallback(async () => {
+    if (!user) {
+      alert("You need to sign in to view your favorites!");
+      return;
+    }
+
+    try {
+      const favoritesRef = collection(db, "favorites");
+      const q = query(favoritesRef, where("user", "==", user.uid));
+      const querySnapshot = await getDocs(q);
+      const fetchedFavorites = querySnapshot.docs.map((doc) => doc.data());
+      setFavorites(fetchedFavorites);
+      setFavoriteIds(new Set(fetchedFavorites.map((fav) => fav.id))); // Track favorite IDs
+      setViewingFavorites(true);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) fetchFavorites();
-  }, [user]);
+  }, [user, fetchFavorites]);
 
   // Function to fetch recipes
   const fetchRecipes = async () => {
@@ -26,7 +46,7 @@ function App() {
         `https://mushroomrecipe.onrender.com/search?mushroom=${mushroom}`
       );
       setRecipes(response.data);
-      setViewingFavorites(false); // Exit favorites view if searching again
+      setViewingFavorites(false);
     } catch (error) {
       console.error("Error fetching recipes:", error);
     }
@@ -37,7 +57,7 @@ function App() {
     try {
       const result = await signInWithGoogle();
       if (result) {
-        setUser(result); // Update state with user info
+        setUser(result);
         alert(`Welcome, ${result.displayName}!`);
       }
     } catch (error) {
@@ -54,7 +74,6 @@ function App() {
 
     try {
       if (favoriteIds.has(recipe.id)) {
-        // Remove from favorites
         const favoritesRef = collection(db, "favorites");
         const q = query(
           favoritesRef,
@@ -72,37 +91,16 @@ function App() {
         });
         alert("Recipe removed from favorites!");
       } else {
-        // Add to favorites
         const favoritesRef = collection(db, "favorites");
         await addDoc(favoritesRef, {
           ...recipe,
-          user: user.uid, // Associate recipe with the signed-in user
+          user: user.uid,
         });
         setFavoriteIds((prev) => new Set(prev).add(recipe.id));
         alert("Recipe saved to favorites!");
       }
     } catch (error) {
       console.error("Error toggling favorite:", error);
-    }
-  };
-
-  // Fetch user's favorite recipes
-  const fetchFavorites = async () => {
-    if (!user) {
-      alert("You need to sign in to view your favorites!");
-      return;
-    }
-
-    try {
-      const favoritesRef = collection(db, "favorites");
-      const q = query(favoritesRef, where("user", "==", user.uid));
-      const querySnapshot = await getDocs(q);
-      const fetchedFavorites = querySnapshot.docs.map((doc) => doc.data());
-      setFavorites(fetchedFavorites);
-      setFavoriteIds(new Set(fetchedFavorites.map((fav) => fav.id))); // Track favorite IDs
-      setViewingFavorites(true); // Set to viewing favorites mode
-    } catch (error) {
-      console.error("Error fetching favorites:", error);
     }
   };
 
@@ -119,9 +117,7 @@ function App() {
       {/* Main Content */}
       <Box sx={{ flexGrow: 1, padding: 3, color: "white" }}>
         {/* Logo */}
-        <Box
-          sx={{ display: "flex", justifyContent: "center", marginBottom: 1 }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 1 }}>
           <img
             src="/mushroomLogo.png"
             alt="Mushroom Recipe Logo"

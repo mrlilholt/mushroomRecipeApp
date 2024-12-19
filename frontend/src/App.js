@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import axios from "axios";
 import { Box, Card, CardMedia, Typography, Grid, Button } from "@mui/material";
 import { db } from "./firebase";

@@ -15,6 +15,7 @@ function BottomNav({ onHomeClick, onFavoritesClick, onVideosClick }) {
         left: 0,
         right: 0,
         backgroundColor: "#1e3c72",
+        zIndex: 10,
       }}
       elevation={3}
     >

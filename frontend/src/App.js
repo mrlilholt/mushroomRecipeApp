@@ -239,6 +239,15 @@ function App() {
           >
             Privacy Policy
           </a>
+          <a
+  href="/terms-of-service.html"
+  style="color: #6dd5ed; text-decoration: none;"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Terms of Service
+</a>
+
         </Typography>
       </Box>
     </Box>

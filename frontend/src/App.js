@@ -14,10 +14,15 @@ function App() {
   const [viewingFavorites, setViewingFavorites] = useState(false);
 
   // Fetch user's favorite recipes
-  const fetchFavorites = useCallback(async (loggedInUser) => {
+  const fetchFavorites = useCallback(async (currentUser) => {
+    if (!currentUser || !currentUser.uid) {
+      console.error("No user is logged in or user data is missing.");
+      return;
+    }
+
     try {
       const favoritesRef = collection(db, "favorites");
-      const q = query(favoritesRef, where("user", "==", loggedInUser.uid));
+      const q = query(favoritesRef, where("user", "==", currentUser.uid));
       const querySnapshot = await getDocs(q);
       const fetchedFavorites = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -25,6 +30,7 @@ function App() {
       }));
       setFavorites(fetchedFavorites);
       setFavoriteIds(new Set(fetchedFavorites.map((fav) => fav.id))); // Track favorite IDs
+      setViewingFavorites(true);
     } catch (error) {
       console.error("Error fetching favorites:", error);
     }
@@ -37,7 +43,6 @@ function App() {
       if (result) {
         setUser(result);
         alert(`Welcome, ${result.displayName}!`);
-        // Fetch favorites for the logged-in user
         await fetchFavorites(result);
       }
     } catch (error) {
@@ -51,6 +56,15 @@ function App() {
     setFavorites([]);
     setFavoriteIds(new Set());
     setViewingFavorites(false);
+  };
+
+  // Handle "View Favorites" button click
+  const handleViewFavorites = async () => {
+    if (!user) {
+      alert("You need to sign in to view favorites!");
+      return;
+    }
+    await fetchFavorites(user);
   };
 
   // Function to fetch recipes
@@ -202,7 +216,7 @@ function App() {
           </Button>
           {user && (
             <Button
-              onClick={fetchFavorites}
+              onClick={handleViewFavorites}
               variant="contained"
               sx={{
                 background: "#ff9800",

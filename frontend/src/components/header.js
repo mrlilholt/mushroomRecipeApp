@@ -29,30 +29,18 @@ function Header({ user, onSignIn, onLogout }) {
           justifyContent: "space-between",
         }}
       >
-        <Box
+        <Typography
+          variant="h6"
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: "bold",
+            color: "white",
+            textAlign: "center",
             flex: 1,
           }}
         >
-          <img
-            src="/mushroomLogo.png"
-            alt="Mushroom Logo"
-            style={{ height: "40px", marginRight: "10px" }}
-          />
-          <Typography
-            variant="h6"
-            sx={{
-              fontFamily: "'Poppins', sans-serif",
-              fontWeight: "bold",
-              color: "white",
-            }}
-          >
-            Mushroom Recipe Finder
-          </Typography>
-        </Box>
+          Mushroom Recipe Finder
+        </Typography>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           {user ? (

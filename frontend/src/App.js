@@ -8,9 +8,8 @@ import { signInWithGoogle } from "./firebase";
 function App() {
   const [mushroom, setMushroom] = useState("");
   const [recipes, setRecipes] = useState([]);
-  const [user, setUser] = useState(null); // State to store the signed-in user
+  const [user, setUser] = useState(null);
 
-  // Function to fetch recipes
   const fetchRecipes = async () => {
     try {
       const response = await axios.get(
@@ -22,12 +21,11 @@ function App() {
     }
   };
 
-  // Google Sign-In Function
   const handleSignIn = async () => {
     try {
       const result = await signInWithGoogle();
       if (result) {
-        setUser(result); // Update state with user info
+        setUser(result);
         alert(`Welcome, ${result.displayName}!`);
       }
     } catch (error) {
@@ -35,7 +33,6 @@ function App() {
     }
   };
 
-  // Save favorite recipe to Firestore
   const saveFavorite = async (recipe) => {
     if (!user) {
       alert("You need to sign in to save favorites!");
@@ -46,7 +43,7 @@ function App() {
       const favoritesRef = collection(db, "favorites");
       await addDoc(favoritesRef, {
         ...recipe,
-        user: user.uid, // Associate recipe with the signed-in user
+        user: user.uid,
       });
       alert("Recipe saved to favorites!");
     } catch (error) {
@@ -64,20 +61,14 @@ function App() {
         justifyContent: "space-between",
       }}
     >
-      {/* Main Content */}
       <Box sx={{ flexGrow: 1, padding: 3, color: "white" }}>
-        {/* Logo */}
-        <Box
-          sx={{ display: "flex", justifyContent: "center", marginBottom: 1 }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 1 }}>
           <img
             src="/mushroomLogo.png"
             alt="Mushroom Recipe Logo"
             style={{ width: "80px", height: "auto" }}
           />
         </Box>
-
-        {/* Title */}
         <Typography
           variant="h3"
           component="h1"
@@ -91,8 +82,6 @@ function App() {
         >
           Mushroom Recipe Finder
         </Typography>
-
-        {/* Sign-In Section */}
         <Box sx={{ display: "flex", justifyContent: "center", marginBottom: 2 }}>
           {!user ? (
             <Button
@@ -106,8 +95,6 @@ function App() {
             <Typography variant="h6">Welcome, {user.displayName}! 🎉</Typography>
           )}
         </Box>
-
-        {/* Search Section */}
         <Box
           sx={{
             display: "flex",
@@ -150,8 +137,6 @@ function App() {
             Search
           </Button>
         </Box>
-
-        {/* Recipe Grid */}
         <Grid container spacing={3} sx={{ marginTop: 3 }}>
           {recipes.map((recipe, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
@@ -214,8 +199,6 @@ function App() {
           ))}
         </Grid>
       </Box>
-
-      {/* Footer */}
       <Box
         component="footer"
         sx={{
@@ -226,13 +209,13 @@ function App() {
         }}
       >
         <Typography variant="body2">
-          &copy; {new Date().getFullYear()} Mushroom Recipe Finder. All rights
-          reserved. |{" "}
+          &copy; {new Date().getFullYear()} Mushroom Recipe Finder. All rights reserved. |{" "}
           <a
             href="/privacy-policy.html"
             style={{
               color: "#6dd5ed",
               textDecoration: "none",
+              marginRight: "10px",
             }}
             target="_blank"
             rel="noopener noreferrer"
@@ -240,14 +223,16 @@ function App() {
             Privacy Policy
           </a>
           <a
-  href="/terms-of-service.html"
-  style="color: #6dd5ed; text-decoration: none;"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  Terms of Service
-</a>
-
+            href="/terms-of-service.html"
+            style={{
+              color: "#6dd5ed",
+              textDecoration: "none",
+            }}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Terms of Service
+          </a>
         </Typography>
       </Box>
     </Box>

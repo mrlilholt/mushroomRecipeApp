@@ -1,4 +1,3 @@
-// App.js (corrected version)
 import React, { useState, useCallback } from "react";
 import { Box } from "@mui/material";
 import Header from "./components/header";
@@ -22,7 +21,9 @@ function App() {
   // Fetch recipes based on user input
   const fetchRecipes = async () => {
     try {
-      const response = await fetch(`https://mushroomrecipe.onrender.com/search?mushroom=${mushroom}`);
+      const response = await fetch(
+        `https://mushroomrecipe.onrender.com/search?mushroom=${mushroom}`
+      );
       const data = await response.json();
       setRecipes(
         data.map((recipe) => ({
